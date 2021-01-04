@@ -21,7 +21,7 @@
       if (!input) {
         //called as a listener
         return {_timestamp: Date.now()}
-      } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object') {
+      } else if (input && typeof input == 'object' && input.listener && input.config && input.payload  && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object') {
         //called as a subscription handler
         console.log('line 26', input)
         return {...input.payload, ...{_timestamp: Date.now()}}
