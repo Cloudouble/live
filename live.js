@@ -20,17 +20,14 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
     triggers: {configurable: false, enumerable: false, writable: false, value: {}}, 
     getHandlerType: {configurable: false, enumerable: false, writable: false, value: function(input) {
         if (!input) {
-            /* called as a listener */
             return 'listener'
         } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
             && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
             && typeof input.subscriber.setAttribute == 'function') {
-            /* called as a subscription handler */
             return 'subscription'
         } else if (input && typeof input == 'object' && input.attributes && input.properties && input.map && input.triggersource 
             && typeof input.attributes == 'object' && typeof input.properties == 'object' && typeof input.map == 'object' && typeof input.triggersource == 'object' 
             && typeof input.triggersource.setAttribute == 'function') {
-            /* called as a trigger handler */
             return 'trigger'
         }
     }}, 
