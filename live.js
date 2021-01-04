@@ -6,24 +6,34 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
     processors: {configurable: false, enumerable: true, writable: false, value: {
         default: function(input) {
-            if (!input) {
-                /* called as a listener */
-                return {_timestamp: Date.now()}
-            } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
-                && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
-                && typeof input.subscriber.setAttribute == 'function') {
-                /* called as a subscription handler */
-                return input.payload
-            } else if (input && typeof input == 'object' && input.attributes && input.properties && input.map && input.triggersource 
-                && typeof input.attributes == 'object' && typeof input.properties == 'object' && typeof input.map == 'object' && typeof input.triggersource == 'object' 
-                && typeof input.triggersource.setAttribute == 'function') {
-                /* called as a trigger handler */
-                console.log(input)
+            switch(window.LiveElement.Live.getHandlerType(input)) {
+                case 'listener': 
+                    return {_timestamp: Date.now()}
+                case 'subscription': 
+                    return input.payload
+                case 'trigger':
+                    console.log(input)
             }
         }
     }}, 
     subscriptions: {configurable: false, enumerable: false, writable: false, value: {}}, 
     triggers: {configurable: false, enumerable: false, writable: false, value: {}}, 
+    getHandlerType: {configurable: false, enumerable: false, writable: false, value: function(input) {
+        if (!input) {
+            /* called as a listener */
+            return 'listener'
+        } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
+            && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
+            && typeof input.subscriber.setAttribute == 'function') {
+            /* called as a subscription handler */
+            return 'subscription'
+        } else if (input && typeof input == 'object' && input.attributes && input.properties && input.map && input.triggersource 
+            && typeof input.attributes == 'object' && typeof input.properties == 'object' && typeof input.map == 'object' && typeof input.triggersource == 'object' 
+            && typeof input.triggersource.setAttribute == 'function') {
+            /* called as a trigger handler */
+            return 'trigger'
+        }
+    }}, 
     runListener: {configurable: false, enumerable: false, writable: false, value: function(key, config) {
         var now = Date.now()
         if (config && typeof config == 'object'
