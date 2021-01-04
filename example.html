@@ -12,22 +12,10 @@
 <body>
   <noscript>live requires javascript enabled</noscript>
   
-  <input name="name" live-subscription="testlistener:default" live-trigger="event:callback" />
+  <input name="name" live-subscription="testlistener:default" live-trigger="change:default" />
   
   <script src="live.js"></script>
   <script>
-    window.LiveElement.Live.processors.default = function(input) {
-      if (!input) {
-        //called as a listener
-        return {_timestamp: Date.now()}
-      } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
-        && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
-        && typeof input.subscriber.setAttribute == 'function') {
-        //called as a subscription handler
-        return input.payload
-      }
-    }
-    
     window.LiveElement.Live.listeners.testlistener = {processor: 'default', delay: 1000, max: 10}
   </script>
 </body>

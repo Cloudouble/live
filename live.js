@@ -4,8 +4,26 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
     loopMaxMs: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     defaultListenerDelay: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
-    processors: {configurable: false, enumerable: true, writable: false, value: {}}, 
+    processors: {configurable: false, enumerable: true, writable: false, value: {
+        default: function(input) {
+            if (!input) {
+                /* called as a listener */
+                return {_timestamp: Date.now()}
+            } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
+                && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
+                && typeof input.subscriber.setAttribute == 'function') {
+                /* called as a subscription handler */
+                return input.payload
+            } else if (input && typeof input == 'object' && input.attributes && input.properties && input.map && input.triggersource 
+                && typeof input.attributes == 'object' && typeof input.properties == 'object' && typeof input.map == 'object' && typeof input.triggersource == 'object' 
+                && typeof input.triggersource.setAttribute == 'function') {
+                /* called as a trigger handler */
+                console.log(input)
+            }
+        }
+    }}, 
     subscriptions: {configurable: false, enumerable: false, writable: false, value: {}}, 
+    triggers: {configurable: false, enumerable: false, writable: false, value: {}}, 
     runListener: {configurable: false, enumerable: false, writable: false, value: function(key, config) {
         var now = Date.now()
         if (config && typeof config == 'object'
@@ -41,31 +59,35 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
         Object.entries(window.LiveElement.Live.listeners).forEach(entry => {
             window.LiveElement.Live.runListener(...entry)
         })
-        document.querySelectorAll('[live-subscription]').forEach(subscribedElement => {
+        var processElement = function(element, type) {
             var firstPass = false
             var cleanVectors
-            var vectorAttributeValueChanged
-            var listSubscriptionAttribute = (subscribedElement.getAttribute('live-subscription') || '')
-            if (!subscribedElement.hasAttribute('live-subscriber')) {
+            var listAttributeValueChanged
+            var listAttribute = (element.getAttribute(`live-${type}`) || '')
+            var referenceLabel = type == 'subscription' ? 'subscriber': 'triggersource'
+            var flags = type == 'subscription' ? window.LiveElement.Live.subscriptions: window.LiveElement.Live.triggers
+            var reference = element.getAttribute(`live-${referenceLabel}`)
+            if (!element.hasAttribute(`live-${referenceLabel}`)) {
                 firstPass = true
                 cleanVectors = []
-                vectorAttributeValueChanged = false
-                subscribedElement.setAttribute('live-subscriber', `${Date.now()}-${parseInt(Math.random()*1000000000)}`)
-            } else if (!firstPass && window.LiveElement.Live.subscriptions[subscriberReference] && typeof window.LiveElement.Live.subscriptions[subscriberReference] == 'object' 
-                && Object.keys(window.LiveElement.Live.subscriptions[subscriberReference]).sort().join(' ') != listSubscriptionAttribute) {
+                listAttributeValueChanged = false
+                element.setAttribute(`live-${referenceLabel}`, `${Date.now()}-${parseInt(Math.random()*1000000000)}`)
+                reference = element.getAttribute(`live-${referenceLabel}`)
+            } else if (!firstPass && reference && flags[reference] && typeof flags[reference] == 'object' 
+                && Object.keys(flags[reference]).sort().join(' ') != listAttribute) {
                 firstPass = true
             }
-            var vectorList = listSubscriptionAttribute.split(' ')
+            var vectorList = listAttribute.split(' ')
             if (firstPass) {
-                vectorList = vectorList.sort()
+                vectorList = vectorList.sort().filter(v => !!v)
             }
-            var subscriberReference = subscribedElement.getAttribute('live-subscriber')
-            if (firstPass && window.LiveElement.Live.subscriptions[subscriberReference] && typeof window.LiveElement.Live.subscriptions[subscriberReference] == 'object') {
-                Object.keys(window.LiveElement.Live.subscriptions[subscriberReference]).forEach(vector => {
+            if (firstPass && flags[reference] && typeof flags[reference] == 'object') {
+                Object.keys(flags[reference]).forEach(vector => {
                     var vectorSplit = vector.split(':')
-                    var listener = vectorSplit[0]
                     if (!vectorList.includes(vector)) {
-                        window.removeEventListener(`live-listener-run-${listener}`, window.LiveElement.Live.subscriptions[subscriberReference][vector])
+                        var eventType = type == 'subscription' ? `live-listener-run-${vectorSplit[0]}` : vectorSplit[0]
+                        var listeningElement =  type == 'subscription' ? window : element
+                        listeningElement.removeEventListener(eventType, flags[reference][vector])
                     }
                 })
             }
@@ -78,39 +100,58 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
                     if (colonIndex === 0) { vector = vector.slice(1) }
                     colonIndex = vector.indexOf(':')
                     if (colonIndex == -1) { vector = `${vector}:default` } else if (colonIndex == vector.length-1) { vector = `${vector}default` }
-                    vectorAttributeValueChanged = originalVector != vector
+                    listAttributeValueChanged = originalVector != vector
                     cleanVectors.push(vector)
                 }
-                if (!window.LiveElement.Live.subscriptions[subscriberReference]) { window.LiveElement.Live.subscriptions[subscriberReference] = {} }
-                if (!window.LiveElement.Live.subscriptions[subscriberReference][vector]) {
+                if (!flags[reference]) { flags[reference] = {} }
+                if (!flags[reference][vector]) {
                     var vectorSplit = vector.split(':')
-                    var listener = vectorSplit[0]
-                    var handler = vectorSplit[1]
-                    window.LiveElement.Live.subscriptions[subscriberReference][vector] = function(event) {
-                        if (typeof window.LiveElement.Live.processors[handler] == 'function') {
-                            var handledPayload = window.LiveElement.Live.processors[handler]({...event.detail, ...{subscriber: subscribedElement}})
-                            if (handledPayload && typeof handledPayload == 'object') {
+                    flags[reference][vector] = function(event) {
+                        if (typeof window.LiveElement.Live.processors[vectorSplit[1]] == 'function') {
+                            var handlerInput =  type == 'subscription' ? {...event.detail, ...{subscriber: element}} 
+                                : {
+                                    ...event.detail, 
+                                    ...{
+                                        attributes: Object.assign({}, ...Array.from(element.attributes).map(a => ({[a.name]: a.value}))), 
+                                        properties: {value: element.value, innerHTML: element.innerHTML, innerText: element.innerText}, 
+                                        map: {
+                                            ...Object.assign({}, ...Array.from(element.attributes).map(a => ({[`@${a.name}`]: a.value}))), 
+                                            ...{'#value': element.value, '#innerHTML': element.innerHTML, '#innerText': element.innerText}
+                                        }, 
+                                        triggersource: element
+                                    }
+                                }
+                            var handledPayload = window.LiveElement.Live.processors[vectorSplit[1]](handlerInput)
+                            if (type == 'subscription' && handledPayload && typeof handledPayload == 'object') {
                                 Object.keys(handledPayload).forEach(k => {
                                     handledPayload[k] = handledPayload[k] === undefined ? '' : (handledPayload[k] === null ? '' : handledPayload[k])
                                     if (k && k[0] == '#') {
-                                        subscribedElement[k.slice(1)] = handledPayload[k]
+                                        element[k.slice(1)] = handledPayload[k]
                                     } else if (k && k[0] == '@') {
-                                        subscribedElement.setAttribute(k.slice(1), handledPayload[k])
+                                        element.setAttribute(k.slice(1), handledPayload[k])
                                     } else {
-                                        subscribedElement.setAttribute(k, handledPayload[k])
+                                        element.setAttribute(k, handledPayload[k])
                                     }
                                 })
                             }
                         }
                     }
-                    window.addEventListener(`live-listener-run-${listener}`, window.LiveElement.Live.subscriptions[subscriberReference][vector])
+                    var eventType = type == 'subscription' ? `live-listener-run-${vectorSplit[0]}` : vectorSplit[0]
+                    var listeningElement =  type == 'subscription' ? window : element
+                    listeningElement.addEventListener(eventType, flags[reference][vector])
                 }
             })
-            if (firstPass && vectorAttributeValueChanged) {
-                subscribedElement.setAttribute('live-subscription', cleanVectors.sort().join(' '))
-            } else if (firstPass && (listSubscriptionAttribute != vectorList.join(' '))) {
-                subscribedElement.setAttribute('live-subscription', vectorList.sort().join(' '))
+            if (firstPass && listAttributeValueChanged) {
+                element.setAttribute(`live-${type}`, cleanVectors.sort().join(' '))
+            } else if (firstPass && (listAttribute != vectorList.join(' '))) {
+                element.setAttribute(`live-${type}`, vectorList.sort().join(' '))
             }
+        }
+        document.querySelectorAll('[live-subscription]').forEach(subscribedElement => {
+            processElement(subscribedElement, 'subscription')
+        })
+        document.querySelectorAll('[live-trigger]').forEach(triggeringElement => {
+            processElement(triggeringElement, 'trigger')
         })
         window.requestIdleCallback(window.LiveElement.Live.run, {options: window.LiveElement.Live.loopMaxMs || 1000})        
     }}
