@@ -45,13 +45,30 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
             var firstPass = false
             var cleanVectors
             var vectorAttributeValueChanged
+            var listSubscriptionAttribute = (subscribedElement.getAttribute('live-subscription') || '')
             if (!subscribedElement.hasAttribute('live-subscriber')) {
                 firstPass = true
                 cleanVectors = []
                 vectorAttributeValueChanged = false
                 subscribedElement.setAttribute('live-subscriber', `${Date.now()}-${parseInt(Math.random()*1000000000)}`)
+            } else if (!firstPass && window.LiveElement.Live.subscriptions[subscriberReference] && typeof window.LiveElement.Live.subscriptions[subscriberReference] == 'object' 
+                && Object.keys(window.LiveElement.Live.subscriptions[subscriberReference]).sort().join(' ') != listSubscriptionAttribute) {
+                firstPass = true
             }
-            var vectorList = (subscribedElement.getAttribute('live-subscription') || '').split(' ')
+            var vectorList = listSubscriptionAttribute.split(' ')
+            if (firstPass) {
+                vectorList = vectorList.sort()
+            }
+            var subscriberReference = subscribedElement.getAttribute('live-subscriber')
+            if (firstPass && window.LiveElement.Live.subscriptions[subscriberReference] && typeof window.LiveElement.Live.subscriptions[subscriberReference] == 'object') {
+                Object.keys(window.LiveElement.Live.subscriptions[subscriberReference]).forEach(vector => {
+                    var vectorSplit = vector.split(':')
+                    var listener = vectorSplit[0]
+                    if (!vectorList.includes(vector)) {
+                        window.removeEventListener(`live-listener-run-${listener}`, window.LiveElement.Live.subscriptions[subscriberReference][vector])
+                    }
+                })
+            }
             vectorList.forEach(vector => {
                 if (firstPass) {
                     let originalVector = vector
@@ -64,7 +81,6 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
                     vectorAttributeValueChanged = originalVector != vector
                     cleanVectors.push(vector)
                 }
-                var subscriberReference = subscribedElement.getAttribute('live-subscriber')
                 if (!window.LiveElement.Live.subscriptions[subscriberReference]) { window.LiveElement.Live.subscriptions[subscriberReference] = {} }
                 if (!window.LiveElement.Live.subscriptions[subscriberReference][vector]) {
                     var vectorSplit = vector.split(':')
@@ -91,7 +107,9 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
                 }
             })
             if (firstPass && vectorAttributeValueChanged) {
-                subscribedElement.setAttribute('live-subscription', cleanVectors.join(' '))
+                subscribedElement.setAttribute('live-subscription', cleanVectors.sort().join(' '))
+            } else if (firstPass && (listSubscriptionAttribute != vectorList.join(' '))) {
+                subscribedElement.setAttribute('live-subscription', vectorList.sort().join(' '))
             }
         })
         window.requestIdleCallback(window.LiveElement.Live.run, {options: window.LiveElement.Live.loopMaxMs || 1000})        
