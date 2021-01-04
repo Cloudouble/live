@@ -16,24 +16,19 @@
   
   <script src="live.js"></script>
   <script>
-    // input = {attributeObj: {}, elementObj: null, source: {type: 'subscription or trigger', vector: 'the string vector value'}
     window.LiveElement.Live.processors.default = function(input) {
       if (!input) {
         //called as a listener
         return {_timestamp: Date.now()}
-      } else if (input && typeof input == 'object' && input.listener && input.config && input.payload  && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object') {
+      } else if (input && typeof input == 'object' && input.listener && input.config && input.payload && input.subscriber 
+        && typeof input.listener == 'string' && typeof input.config == 'object' && typeof input.payload == 'object' && typeof input.subscriber == 'object' 
+        && typeof input.subscriber.setAttribute == 'function') {
         //called as a subscription handler
-        console.log('line 26', input)
-        return {...input.payload, ...{_timestamp: Date.now()}}
+        return input.payload
       }
     }
     
     window.LiveElement.Live.listeners.testlistener = {processor: 'default', delay: 1000, max: 10}
-    
-    window.addEventListener('live-listener-run-testlistener', event => {
-      console.log('line 31', event.detail.payload)
-    })
-    
   </script>
 </body>
 </html>
