@@ -5,6 +5,7 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
     defaultListenerDelay: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
     processors: {configurable: false, enumerable: true, writable: false, value: {}}, 
+    subscriptions: {configurable: false, enumerable: false, writable: false, value: {}}, 
     runListener: {configurable: false, enumerable: false, writable: false, value: function(key, config) {
         var now = Date.now()
         if (config && typeof config == 'object'
@@ -40,9 +41,35 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
         Object.entries(window.LiveElement.Live.listeners).forEach(entry => {
             window.LiveElement.Live.runListener(...entry)
         })
-        /*document.querySelectorAll('[live-subscription]').forEach(subscribedElement => {
-            
-        })*/
+        document.querySelectorAll('[live-subscription]').forEach(subscribedElement => {
+            if (!subscribedElement.hasAttribute('live-subscriber')) {
+                subscribedElement.setAttribute('live-subscriber', `${Date.now()}-${parseInt(Math.random()*1000000000)}`)
+            }
+            var vectorList = (subscribedElement.getAttribute('live-subscription') || '').split(' ')
+            vectorList.forEach(vector => {
+                let colonIndex = vector.indexOf(':')
+                if (colonIndex != -1) {
+                    vector = vector.replace(/:+/g, ':')
+                }
+                if (colonIndex === 0) {
+                    vector = vector.slice(1)
+                }
+                colonIndex = vector.indexOf(':')
+                if (colonIndex == -1) {
+                    vector = `${vector}:default`
+                } else if (colonIndex == vector.length-1) {
+                    vector = `${vector}default`
+                }
+                var subscriberReference = subscribedElement.getAttribute('live-subscriber')
+                if (!window.LiveElement.Live.subscriptions[subscriberReference]) {
+                    window.LiveElement.Live.subscriptions[subscriberReference] = {}
+                }
+                if (!window.LiveElement.Live.subscriptions[subscriberReference][vector]) {
+                    window.LiveElement.Live.subscriptions[subscriberReference][vector] = true
+                    
+                }
+            })
+        })
         window.requestIdleCallback(window.LiveElement.Live.run, {options: window.LiveElement.Live.loopMaxMs || 1000})        
     }}
 })
