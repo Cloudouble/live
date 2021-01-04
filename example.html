@@ -12,11 +12,19 @@
 <body>
   <noscript>live requires javascript enabled</noscript>
   
-  <input name="name" live-subscription="subscription:callback" live-trigger="event:callback" />
+  <input name="name" live-subscription="testsubscription" live-trigger="event:callback" />
   
   <script src="live.js"></script>
   <script>
-  var callback = function(attributeObj, elementObj, source={type: 'subscription or trigger', vector: 'the string vector value'}) {}
+    // input = {attributeObj: {}, elementObj: null, source: {type: 'subscription or trigger', vector: 'the string vector value'}
+    window.LiveElement.Live.processors.testprocessor = function(input) {
+      if (!input) {
+        console.log('called as a listener')
+      }
+      //console.log('line 24: test processor', attributeObj, elementObj, source)
+    }
+    window.LiveElement.Live.subscriptions.testsubscription = {listener: 'testprocessor', delay: 1000, last: 0, expires: 0}
+    window.LiveElement.Live.listeners.testlistener = {processor: 'testprocessor', delay: 1000, last: 0, expires: 0}
   </script>
 </body>
 </html>
