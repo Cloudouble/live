@@ -42,7 +42,7 @@ multiple vectors/directives will be sorted alphabetically in the list
 
 ## Defining listeners
 * add as a key / object to the ```window.LiveElement.Live.listeners``` object
-* listeners run on the schedule defined by you, this can be adjusted at runtime as often as you like to create any complex, responsive schedule you like
+* listeners run on the schedule defined by you, this can be adjusted at runtime to create any complex, responsive schedule you like
 * the loop which triggers listeners to run, runs on the browser idle loop - this means that timing is not exact to the millisecond and the busier your main loop is
 the more likely that eratic delays in your listener timing will occur. In normal usage this will be completely imperceptible. 
 See [window.requestIdleCallback](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback) for more details on how this works.
@@ -52,7 +52,7 @@ See [window.requestIdleCallback](https://developer.mozilla.org/en-US/docs/Web/AP
 * ```delay``` => (optional) how often to run the listener in millseconds, this is a minimum - the actual loop frequency will be 10-100ms higher
 * ```expires``` => (optional) a millsecond timestamp which tells the system to stop running the listener after this moment
 * ```max``` => (optional) an integer which specifies the maximum number of times to run the listener
-* ```next``` => (optional) a millisecond timestamp will tells the system not to run the listen again until the next tick after this time
+* ```next``` => (optional) a millisecond timestamp will tells the system not to run the listener again until the next tick after this time
 
 
 ## Defining processors
@@ -133,11 +133,21 @@ listener last ran, and ```count``` which is a incremental counter of how many ti
 and when the input is changed it writes a message including the input name and new value to the console.
 
 
+## Hang on, where does that 'server-side' data come in?
+* define your listener processor to poll an API, or whatever other method you like to retrieve structured data from the server
+* define your trigger processor to push to an API, or whatever other method you like to push data back to your server
+* your processor can also read-write to resources like IndexedDB, a web socket, etc - it's completely backend agnostic
+
 
 ## Further Reading 
 
 [live-element framework](https://live-element.net)
 
+[MDN Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+
+[IndexedDB API](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+
+[Websocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
