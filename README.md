@@ -5,7 +5,7 @@ the [live-element](https://live-element.net) framework.
 ## Installation
 * include the script tag for the element.js file, it creates a window.Element object
 ```
-<script src="https://cdn.jsdelivr.net/gh/cloudouble/live@1.0.0/element.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/cloudouble/live@1.0.0/live.min.js"></script>
 ```
 
 
