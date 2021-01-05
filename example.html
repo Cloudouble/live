@@ -21,6 +21,7 @@
           case 'subscription': 
               return {placeholder: input.payload._timestamp}
           case 'trigger':
+              console.log('line 24', input)
               console.log(`You changed the value of ${input.attributes.name} to "${input.map['#value']}"`)
       }
     }
