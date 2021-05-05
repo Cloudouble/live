@@ -5,7 +5,7 @@ the [live-element](https://live-element.net) framework.
 ## Installation
 * include the script tag for the element.js file, it creates a window.Element object
 ```
-<script src="https://cdn.jsdelivr.net/gh/cloudouble/live@1.0.2/live.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/cloudouble/live@1.0.3/live.min.js"></script>
 ```
 
 
@@ -137,6 +137,20 @@ and when the input is changed it writes a message including the input name and n
 * define your listener processor to poll an API, or whatever other method you like to retrieve structured data from the server
 * define your trigger processor to push to an API, or whatever other method you like to push data back to your server
 * your processor can also read-write to resources like IndexedDB, a web socket, etc - it's completely backend agnostic
+* listen directly on incoming events (like WebSocket messages) using the `window.LiveElement.Live.listen` method
+ 
+
+### The `listen` method `window.LiveElement.Live.listen(input, listenerKey, eventName, once=false, force=false, silent=false)`
+Use this to subscribe to non-markupable event streams, it uses the following arguments:
+* `input`: this can be any instance of an `EventTarget` (ie any element, or other event emitting objects like websockets or the window itself), 
+it can also be an `Event` object directly. If it's an `EventTarget` it will set up an ongoing listener for this, otherwise it is a one-off.
+* `listenerKey`: this is the key of the listener to use
+* `eventName`: this is the name of the event to be listening for (only if `input` is an `EventTarget`)
+* `once`: set this to `true` to have this stop listening after the first time it is processed, default is `false` to listening ongoing
+* `force`: set this to `true` to ignore the listeners configuration regarding max number of times and expiry, it will run even if the listening is 
+otherwise expired, default is `false` which will respect the listener's expiry settings
+* `silent`: set this to the `true` to not record the event in the listener's `last` and `count` values, it will then not affect a separate scheduled 
+running of the listener
 
 
 ## Further Reading 

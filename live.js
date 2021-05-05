@@ -1,6 +1,6 @@
 window.LiveElement = window.LiveElement || {}
 window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({}, {
-    version: {configurable: false, enumerable: true, writable: false, value: '1.0.2'}, 
+    version: {configurable: false, enumerable: true, writable: false, value: '1.0.3'}, 
     loopMaxMs: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     defaultListenerDelay: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
@@ -8,7 +8,7 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
         default: function(input) {
             switch(window.LiveElement.Live.getHandlerType(input)) {
                 case 'listener': 
-                    return {_timestamp: Date.now()}
+                    return { ...(input instanceof window.Event?input.detail:(input && typeof input == 'object'?input:{})), ...{_timestamp: Date.now(), _input: input}}
                 case 'subscription': 
                     return input.payload
                 case 'trigger':
@@ -29,34 +29,61 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
             && typeof input.attributes == 'object' && typeof input.properties == 'object' && typeof input.map == 'object' && typeof input.triggersource == 'object' 
             && typeof input.triggersource.setAttribute == 'function') {
             return 'trigger'
+        } else if (input) {
+            return 'listener'
+        }
+    }}, 
+    listen: {configurable: false, enumerable: false, writable: false, value: function(input, listenerKey, eventName, once=false, force=false, silent=false) {
+        if (input instanceof window.Event) {
+            if (window.LiveElement.Live.listeners[listenerKey]) {
+                var inputOnce = {eventname: eventName, eventtarget: event.target, detail: event.detail, event: input}
+                window.LiveElement.Live.runListener(listenerKey, {...window.LiveElement.Live.listeners[listenerKey], ...{force: force, silent: silent, inputOnce: inputOnce}})
+            }
+        } else if (input instanceof window.EventTarget) {
+            eventName = eventName || (input instanceof window.HTMLInputElement || input instanceof window.HTMLSelectElement || input instanceof window.HTMLTextAreaElement ? 'change' : 'click')
+            input.addEventListener(eventName, event => {
+                window.LiveElement.Live.listen(event, listenerKey, eventName, once, force, silent)
+            }, {once: once})
+        } else {
+            window.LiveElement.Live.runListener(listenerKey, {...window.LiveElement.Live.listeners[listenerKey], ...{force: force, silent: silent, inputOnce: input}})
         }
     }}, 
     runListener: {configurable: false, enumerable: false, writable: false, value: function(key, config) {
         var now = Date.now()
         if (config && typeof config == 'object'
-            && !config.expired 
+            && (config.force || (!config.force && !config.expired)) 
             && typeof config.processor == 'string' && typeof window.LiveElement.Live.processors[config.processor] == 'function'
-            && (((config.last || 0) + (config.delay || window.LiveElement.Live.defaultListenerDelay)) < now)) {
-            if (config.expires && (config.expires <= now)) {
+            && (config.force || (((config.last || 0) + (config.delay || window.LiveElement.Live.defaultListenerDelay)) < now))) {
+            if (!config.force && (config.expires && (config.expires <= now))) {
                 config.expired = true
                 window.dispatchEvent(new window.CustomEvent('live-listener-expired', {detail: {listener: key, config: config}}))
                 window.dispatchEvent(new window.CustomEvent(`live-listener-expired-${key}`, {detail: {listener: key, config: config}}))
-            } else if (config.count && config.max && (config.count >= config.max)) {
+            } else if (!config.force && (config.count && config.max && (config.count >= config.max))) {
                 config.expired = true
                 window.dispatchEvent(new window.CustomEvent('live-listener-maxed', {detail: {listener: key, config: config}}))
                 window.dispatchEvent(new window.CustomEvent(`live-listener-maxed-${key}`, {detail: {listener: key, config: config}}))
-            } else if (config.next && (config.next > now)) {
+            } else if (!config.force && (config.next && (config.next > now))) {
                 window.dispatchEvent(new window.CustomEvent('live-listener-passed', {detail: {listener: key, config: config}}))
                 window.dispatchEvent(new window.CustomEvent(`live-listener-passed-${key}`, {detail: {listener: key, config: config}}))
             } else {
-                config.last = now
-                config.count = (config.count || 0) + 1
                 var showconfig = {...config}
-                if (config.next) {
-                    showconfig.next = config.next
-                    delete config.next
+                if (!config.silent) {
+                    config.last = now
+                    config.count = (config.count || 0) + 1
+                    showconfig.last = config.last
+                    showconfig.count = config.count
+                    if (config.next) {
+                        showconfig.next = config.next
+                        delete config.next
+                    }
                 }
-                var payload = window.LiveElement.Live.processors[config.processor]()
+                if (config.inputOnce) {
+                    showconfig.input = config.inputOnce
+                    delete config.inputOnce
+                } else if (config.input) {
+                    showconfig.input = config.input
+                }
+                var payload = window.LiveElement.Live.processors[config.processor](showconfig.input)
                 window.dispatchEvent(new window.CustomEvent('live-listener-run', {detail: {listener: key, config: showconfig, payload: payload}}))
                 window.dispatchEvent(new window.CustomEvent(`live-listener-run-${key}`, {detail: {listener: key, config: showconfig, payload: payload}}))
             }

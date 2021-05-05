@@ -13,6 +13,7 @@
   <noscript>live requires javascript enabled</noscript>
   
   <input name="testinput" live-subscription="testlistener:example" live-trigger="change:example" />
+  <button>Click Me!</button>
   
   <script src="live.js"></script>
   <script>
@@ -21,11 +22,13 @@
           case 'subscription': 
               return {placeholder: input.payload._timestamp}
           case 'trigger':
-              console.log('line 24', input)
               console.log(`You changed the value of ${input.attributes.name} to "${input.map['#value']}"`)
       }
     }
     window.LiveElement.Live.listeners.testlistener = {processor: 'default', delay: 1000, max: 10}
+    window.LiveElement.Live.listen(document.querySelector('button'), 'testlistener', 'click', false, true, false)
+    window.LiveElement.Live.listen(window, 'testlistener', 'hashchange', false, true, false)
+    
   </script>
 </body>
 </html>
