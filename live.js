@@ -1,6 +1,6 @@
 window.LiveElement = window.LiveElement || {}
 window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({}, {
-    version: {configurable: false, enumerable: true, writable: false, value: '1.0.3'}, 
+    version: {configurable: false, enumerable: true, writable: false, value: '1.0.4'}, 
     loopMaxMs: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     defaultListenerDelay: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
@@ -152,7 +152,8 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
                                             ...Object.assign({}, ...Array.from(element.attributes).map(a => ({[`@${a.name}`]: a.value}))), 
                                             ...{'#value': element.value, '#innerHTML': element.innerHTML, '#innerText': element.innerText}
                                         }, 
-                                        triggersource: element
+                                        triggersource: element, 
+                                        vector: vector
                                     }
                                 }
                             var handledPayload = window.LiveElement.Live.processors[vectorSplit[1]](handlerInput)
