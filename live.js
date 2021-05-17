@@ -1,6 +1,6 @@
 window.LiveElement = window.LiveElement || {}
 window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({}, {
-    version: {configurable: false, enumerable: true, writable: false, value: '1.0.5'}, 
+    version: {configurable: false, enumerable: true, writable: false, value: '1.0.6'}, 
     loopMaxMs: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     defaultListenerDelay: {configurable: false, enumerable: true, writable: false, value: 1000}, 
     listeners: {configurable: false, enumerable: true, writable: false, value: {}}, 
@@ -135,6 +135,7 @@ window.LiveElement.Live = window.LiveElement.Live || Object.defineProperties({},
                     colonIndex = vector.indexOf(':')
                     if (colonIndex == -1) { vector = `${vector}:default` } else if (colonIndex == vector.length-1) { vector = `${vector}default` }
                     listAttributeValueChanged = originalVector != vector
+                    cleanVectors = cleanVectors || []
                     cleanVectors.push(vector)
                 }
                 if (!flags[reference]) { flags[reference] = {} }
